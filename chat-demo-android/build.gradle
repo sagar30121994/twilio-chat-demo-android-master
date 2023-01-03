@@ -1,0 +1,116 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+
+def ACCESS_TOKEN_SERVICE_URL = project.hasProperty('ACCESS_TOKEN_SERVICE_URL') ? "\""+project.getProperty('ACCESS_TOKEN_SERVICE_URL')+"\"" : "\"http://example.com/token\""
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:$androidXVersion"
+    implementation 'com.google.android.material:material:1.2.1'
+
+    // FCM
+    // Firebase now requires the app gradle file to explicitly list
+    // `com.google.firebase:firebase-core` as a dependency for Firebase services to work as expected.
+    implementation 'com.google.firebase:firebase-core:17.5.1'
+    implementation 'com.google.firebase:firebase-iid:20.3.0'
+    implementation 'com.google.firebase:firebase-messaging:20.3.0'
+
+    // Crashlytics
+    implementation 'com.google.firebase:firebase-crashlytics:17.2.2'
+    implementation 'com.google.firebase:firebase-crashlytics-ndk:17.2.2'
+
+    implementation "com.jakewharton:kotterknife:0.1.0-SNAPSHOT"
+    implementation "eu.inloop:simplerecycleradapter:0.3.4"
+
+    implementation 'com.twilio:chat-android-with-symbols:6.1.1'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
+    implementation "org.jetbrains.anko:anko:0.10.5"
+
+}
+
+android {
+    compileSdkVersion androidCompileSdkVersion
+
+    defaultConfig {
+        applicationId "com.twilio.chat.demo"
+        minSdkVersion androidMinSdkVersion
+        targetSdkVersion androidCompileSdkVersion
+        buildToolsVersion androidBuildToolsVersion
+
+        versionCode 26
+        versionName "1.0"
+
+        buildConfigField "String", "ACCESS_TOKEN_SERVICE_URL", ACCESS_TOKEN_SERVICE_URL
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    buildTypes {
+        release {
+            shrinkResources true
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            firebaseCrashlytics {
+                nativeSymbolUploadEnabled true
+
+                println "release: unstrippedNativeLibsDir \"build/intermediates/merged_native_libs/release/out/lib\""
+                unstrippedNativeLibsDir "build/intermediates/merged_native_libs/release/out/lib"
+
+                println "release: strippedNativeLibsDir \"build/intermediates/stripped_native_libs/release/out/lib\""
+                strippedNativeLibsDir "build/intermediates/stripped_native_libs/release/out/lib"
+            }
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+
+            firebaseCrashlytics {
+                nativeSymbolUploadEnabled true
+
+                println "debug: unstrippedNativeLibsDir \"build/intermediates/merged_native_libs/debug/out/lib\""
+                unstrippedNativeLibsDir "build/intermediates/merged_native_libs/debug/out/lib"
+
+                println "debug: strippedNativeLibsDir \"build/intermediates/stripped_native_libs/debug/out/lib\""
+                strippedNativeLibsDir "build/intermediates/stripped_native_libs/debug/out/lib"
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+        useIR = true
+    }
+
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+}
+
+// Keep an eye on SDK deprecations
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xdiags:verbose"
+}
+
+if (hasProperty("googleServicesJson")) {
+    copy {
+        from(googleServicesJson)
+        into(projectDir)
+    }
+}
